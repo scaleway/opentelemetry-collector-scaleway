@@ -1,0 +1,5 @@
+GOCMD?= go
+
+.PHONY: tests
+test:
+	$(GOCMD) test ./...
