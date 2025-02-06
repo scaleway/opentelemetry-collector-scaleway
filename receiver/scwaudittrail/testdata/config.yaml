@@ -1,0 +1,4 @@
+scwaudittrail:
+scwaudittrail/all_settings:
+  interval: 10m
+  max_events_per_request: 10
