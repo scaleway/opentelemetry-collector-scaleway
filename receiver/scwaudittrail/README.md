@@ -34,7 +34,7 @@ Here is an example configuration for the collector using this receiver and the [
 
 ```yaml
 receivers:
-  audittrail:
+  scwaudittrail:
     access_key: ${env:SCW_ACCESS_KEY}
     secret_key: ${env:SCW_ACCESS_KEY}
     organization_id: ${env:SCW_DEFAULT_ORGANIZATION_ID}
@@ -49,6 +49,6 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [audittrail]
+      receivers: [scwaudittrail]
       exporters: [otlp]
 ```
