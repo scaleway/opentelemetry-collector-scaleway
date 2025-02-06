@@ -5,13 +5,12 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/zap"
-
 	audit_trail "github.com/scaleway/scaleway-sdk-go/api/audit_trail/v1alpha1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 )
 
 // auditTrailReceiver implements a custom OpenTelemetry log receiver.
