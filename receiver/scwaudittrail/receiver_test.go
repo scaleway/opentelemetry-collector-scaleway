@@ -16,7 +16,7 @@ import (
 
 func TestNewLogsReceiver(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
-	rCfg.makeClient = func(c *Config) (Client, error) {
+	rCfg.makeClient = func(_ *Config) (Client, error) {
 		ctrl := gomock.NewController(t)
 		client := NewMockClient(ctrl)
 		return client, nil
@@ -37,7 +37,7 @@ func TestNewLogsReceiver(t *testing.T) {
 
 func TestHandleEvent(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
-	rCfg.makeClient = func(c *Config) (Client, error) {
+	rCfg.makeClient = func(_ *Config) (Client, error) {
 		ctrl := gomock.NewController(t)
 		client := NewMockClient(ctrl)
 		return client, nil
@@ -67,7 +67,7 @@ func TestFetchEvents(t *testing.T) {
 		Events: []*audit_trail.Event{getEvent()},
 	}
 
-	rCfg.makeClient = func(c *Config) (Client, error) {
+	rCfg.makeClient = func(_ *Config) (Client, error) {
 		ctrl := gomock.NewController(t)
 		client := NewMockClient(ctrl)
 

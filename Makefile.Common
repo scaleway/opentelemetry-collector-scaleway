@@ -1,5 +1,16 @@
 GOCMD?= go
+COVER_PKGS := $(shell go list ./... | tr "\n" ",")
+LINT := golangci-lint
 
 .PHONY: tests
 test:
 	$(GOCMD) test ./...
+
+.PHONY: test-with-cover
+test-with-cover:
+	mkdir -p $(PWD)/coverage/unit
+	$(GOCMD) test -cover -covermode=atomic -coverpkg $(COVER_PKGS) -test.gocoverdir="$(PWD)/coverage/unit" ./...
+
+.PHONY: lint
+lint:
+	$(LINT) run

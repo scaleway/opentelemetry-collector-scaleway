@@ -23,7 +23,7 @@ func TestCreateReceiver(t *testing.T) {
 	assert.Error(t, err)
 
 	// Override for test.
-	rCfg.makeClient = func(c *Config) (Client, error) {
+	rCfg.makeClient = func(_ *Config) (Client, error) {
 		ctrl := gomock.NewController(t)
 		client := NewMockClient(ctrl)
 		return client, nil

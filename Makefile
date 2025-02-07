@@ -20,3 +20,12 @@ for-all-target: $(GOMODULES)
 .PHONY: gotest
 gotest:
 	@$(MAKE) for-all-target TARGET="test"
+
+.PHONY: gotest-with-cover
+gotest-with-cover:
+	@$(MAKE) for-all-target TARGET="test-with-cover"
+	$(GOCMD) tool covdata textfmt -i=./coverage/unit -o ./coverage.txt
+
+.PHONY: golint
+golint:
+	@$(MAKE) for-all-target TARGET="lint"
