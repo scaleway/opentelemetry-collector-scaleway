@@ -2,6 +2,17 @@
 
 The Scaleway Audit Trail receiver collects audit trail events from your scaleway organization.
 
+## Builder
+
+To use this component with a custom OpenTelemetry Collector distribution, add the following configuration:
+
+```yaml
+receivers:
+  - gomod: github.com/scaleway/opentelemetry-collector-scaleway/receiver/scwaudittrail v0.1.0
+```
+
+Update the tag according to the latest release of this repository.
+
 ## Configuration
 
 The following config is required:
