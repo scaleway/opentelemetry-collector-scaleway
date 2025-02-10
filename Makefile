@@ -29,3 +29,16 @@ gotest-with-cover:
 .PHONY: golint
 golint:
 	@$(MAKE) for-all-target TARGET="lint"
+
+.PHONY: gotidy
+gotidy:
+	@$(MAKE) for-all-target TARGET="tidy"
+
+.PHONY: multimod-verify
+multimod-verify:
+	$(MULTIMOD) verify
+
+.PHONY: multimod-prerelease
+multimod-prerelease:
+	$(MULTIMOD) prerelease --module-set-names stable
+	$(MAKE) gotidy
