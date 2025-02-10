@@ -1,6 +1,7 @@
 GOCMD?= go
 COVER_PKGS := $(shell go list ./... | tr "\n" ",")
 LINT := golangci-lint
+MULTIMOD := $(GOCMD) run go.opentelemetry.io/build-tools/multimod
 
 .PHONY: tests
 test:
@@ -14,3 +15,8 @@ test-with-cover:
 .PHONY: lint
 lint:
 	$(LINT) run
+
+.PHONY: tidy
+tidy:
+	rm -fr go.sum
+	$(GOCMD) mod tidy
