@@ -21,8 +21,8 @@ func Test_auditTrailEventToLogs(t *testing.T) {
 	attrs := lr.LogRecords().At(0).Attributes()
 
 	assert.Equal(t, 1, ld.ResourceLogs().Len())
-	assert.Equal(t, 3, resourceAttrs.Len())
-	assert.Equal(t, 7, attrs.Len())
+	assert.Equal(t, 1, resourceAttrs.Len())
+	assert.Equal(t, 6, attrs.Len())
 
 	auditTrailEvent.Resource = nil
 	auditTrailEvent.MethodName = "DeleteSecret"
@@ -38,8 +38,8 @@ func Test_auditTrailEventToLogs(t *testing.T) {
 	attrs = lr.LogRecords().At(0).Attributes()
 
 	assert.Equal(t, 1, ld.ResourceLogs().Len())
-	assert.Equal(t, 0, resourceAttrs.Len())
-	assert.Equal(t, 7, attrs.Len())
+	assert.Equal(t, 1, resourceAttrs.Len())
+	assert.Equal(t, 6, attrs.Len())
 }
 
 func getEvent() *audit_trail.Event {
