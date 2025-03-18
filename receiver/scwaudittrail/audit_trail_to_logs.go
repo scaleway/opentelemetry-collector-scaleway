@@ -17,15 +17,8 @@ func auditTrailEventToLogs(logger *zap.Logger, event *audit_trail.Event) plog.Lo
 	sl := rl.ScopeLogs().AppendEmpty()
 	lr := sl.LogRecords().AppendEmpty()
 
-	if event.Resource != nil {
-		resourceAttrs := rl.Resource().Attributes()
-		resourceAttrs.PutStr("audit_trail.resource.id", event.Resource.ID)
-		resourceAttrs.PutStr("audit_trail.resource.type", event.Resource.Type.String())
-
-		if event.Resource.Name != nil {
-			resourceAttrs.PutStr("audit_trail.resource.name", *event.Resource.Name)
-		}
-	}
+	resourceAttrs := rl.Resource().Attributes()
+	resourceAttrs.PutStr(semconv.AttributeServiceName, event.ServiceName)
 
 	lr.SetTimestamp(pcommon.NewTimestampFromTime(*event.RecordedAt))
 	lr.SetEventName(event.MethodName)
@@ -52,7 +45,6 @@ func auditTrailEventToLogs(logger *zap.Logger, event *audit_trail.Event) plog.Lo
 	attrs.PutStr("audit_trail.event.source_ip", event.SourceIP.String())
 	attrs.PutInt("audit_trail.event.status_code", int64(event.StatusCode))
 	attrs.PutStr("audit_trail.event.request_id", event.RequestID)
-	attrs.PutStr(semconv.AttributeServiceName, event.ServiceName)
 
 	if event.UserAgent != nil {
 		attrs.PutStr("audit_trail.event.user_agent", *event.UserAgent)
