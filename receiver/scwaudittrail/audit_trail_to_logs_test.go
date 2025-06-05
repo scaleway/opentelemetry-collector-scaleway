@@ -24,7 +24,6 @@ func Test_auditTrailEventToLogs(t *testing.T) {
 	assert.Equal(t, 1, resourceAttrs.Len())
 	assert.Equal(t, 6, attrs.Len())
 
-	auditTrailEvent.Resource = nil
 	auditTrailEvent.MethodName = "DeleteSecret"
 	auditTrailEvent.RequestBody = &scw.JSONObject{
 		"secret_id": "74472a00-98e9-42b1-8195-5a40a4e1d674",
