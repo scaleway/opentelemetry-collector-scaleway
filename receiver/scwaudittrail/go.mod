@@ -3,7 +3,7 @@ module github.com/scaleway/opentelemetry-collector-scaleway/receiver/scwaudittra
 go 1.23.4
 
 require (
-	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.32
+	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.33
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.118.0
 	go.opentelemetry.io/collector/component/componenttest v0.118.0

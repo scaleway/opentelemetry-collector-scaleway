@@ -57,14 +57,16 @@ func getEvent() *audit_trail.Event {
 		ProductName:    "secret-manager",
 		ServiceName:    "scaleway.secret_manager.v1beta1.Api",
 		MethodName:     "CreateSecret",
-		Resource: &audit_trail.Resource{
-			ID:        "74472a00-98e9-42b1-8195-5a40a4e1d674",
-			Type:      audit_trail.ResourceTypeSecmSecret,
-			CreatedAt: toPtr(time.Now()),
-			UpdatedAt: toPtr(time.Now()),
-			Name:      toPtr("secret-name"),
-			SecmSecretInfo: &audit_trail.SecretManagerSecretInfo{
-				Path: "/",
+		Resources: []*audit_trail.Resource{
+			{
+				ID:        "74472a00-98e9-42b1-8195-5a40a4e1d674",
+				Type:      audit_trail.ResourceTypeSecmSecret,
+				CreatedAt: toPtr(time.Now()),
+				UpdatedAt: toPtr(time.Now()),
+				Name:      toPtr("secret-name"),
+				SecmSecretInfo: &audit_trail.SecretManagerSecretInfo{
+					Path: "/",
+				},
 			},
 		},
 		RequestID: "45062835-e0b2-4b48-bb22-52227542bc79",
