@@ -42,3 +42,14 @@ multimod-verify:
 multimod-prerelease:
 	$(MULTIMOD) prerelease --module-set-names stable
 	$(MAKE) gotidy
+
+
+COMMIT?=HEAD
+MODSET?=stable
+REMOTE?=git@github.com:scaleway/opentelemetry-collector-scaleway.git
+push-tags:
+	$(MULTIMOD) verify
+	set -e; for tag in `$(MULTIMOD) tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
+		echo "pushing tag $${tag}"; \
+		git push ${REMOTE} $${tag}; \
+	done;
