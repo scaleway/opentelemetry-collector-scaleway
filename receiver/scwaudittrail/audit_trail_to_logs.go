@@ -7,7 +7,7 @@ import (
 	audit_trail "github.com/scaleway/scaleway-sdk-go/api/audit_trail/v1alpha1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -18,7 +18,7 @@ func auditTrailEventToLogs(logger *zap.Logger, event *audit_trail.Event) plog.Lo
 	lr := sl.LogRecords().AppendEmpty()
 
 	resourceAttrs := rl.Resource().Attributes()
-	resourceAttrs.PutStr(semconv.AttributeServiceName, event.ServiceName)
+	resourceAttrs.PutStr(string(semconv.ServiceNameKey), event.ServiceName)
 
 	lr.SetTimestamp(pcommon.NewTimestampFromTime(*event.RecordedAt))
 	lr.SetEventName(event.MethodName)
