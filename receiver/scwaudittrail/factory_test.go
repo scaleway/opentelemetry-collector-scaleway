@@ -17,7 +17,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	// Fails with bad SCW Config.
 	_, err := createLogsReceiver(
-		context.Background(), receivertest.NewNopSettings(),
+		context.Background(), receivertest.NewNopSettings(receivertest.NopType),
 		rCfg, consumertest.NewNop(),
 	)
 	assert.Error(t, err)
@@ -31,7 +31,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	r, err := createLogsReceiver(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
 		rCfg, consumertest.NewNop(),
 	)
 

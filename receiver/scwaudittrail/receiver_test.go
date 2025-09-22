@@ -24,7 +24,7 @@ func TestNewLogsReceiver(t *testing.T) {
 
 	r, err := newLogsReceiver(
 		rCfg,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
 		consumertest.NewNop(),
 	)
 
@@ -46,7 +46,7 @@ func TestHandleEvent(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	r, err := newLogsReceiver(
 		rCfg,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
 		sink,
 	)
 
@@ -82,7 +82,7 @@ func TestFetchEvents(t *testing.T) {
 
 	r, err := newLogsReceiver(
 		rCfg,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
 		consumertest.NewNop(),
 	)
 
