@@ -2,14 +2,19 @@ package scwaudittrail
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 	"sync"
 	"time"
 
 	audit_trail "github.com/scaleway/scaleway-sdk-go/api/audit_trail/v1alpha1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -88,13 +93,9 @@ func (r *auditTrailReceiver) startPolling(ctx context.Context) {
 
 // poll fetches events from the Audit Trail API and sends them to the consumer.
 func (r *auditTrailReceiver) poll(ctx context.Context, until time.Time) error {
-	events, err := r.fetchEvents(until)
+	err := r.fetchEvents(ctx, until)
 	if err != nil {
 		return err
-	}
-
-	for _, event := range events {
-		r.handleEvent(ctx, event)
 	}
 
 	r.lastFetchedAt = until
@@ -103,8 +104,7 @@ func (r *auditTrailReceiver) poll(ctx context.Context, until time.Time) error {
 }
 
 // fetchEvents uses scw sdk to fetch events.
-func (r *auditTrailReceiver) fetchEvents(until time.Time) ([]*audit_trail.Event, error) {
-	events := make([]*audit_trail.Event, 0)
+func (r *auditTrailReceiver) fetchEvents(ctx context.Context, until time.Time) error {
 	var nextPageToken *string
 
 	for {
@@ -124,11 +124,13 @@ func (r *auditTrailReceiver) fetchEvents(until time.Time) ([]*audit_trail.Event,
 		})
 		if err != nil {
 			r.settings.Logger.Error("Failed to fetch events", zap.Error(err))
-			return nil, err
+			return nil
 		}
 
 		r.settings.Logger.Debug("Events fetched", zap.Int("count", len(response.Events)))
-		events = append(events, response.Events...)
+
+		logs := r.processEvents(ctx, response)
+		r.consumeLogs(ctx, logs)
 
 		if response.NextPageToken == nil {
 			break
@@ -137,15 +139,59 @@ func (r *auditTrailReceiver) fetchEvents(until time.Time) ([]*audit_trail.Event,
 		nextPageToken = response.NextPageToken
 	}
 
-	return events, nil
+	return nil
+}
+
+func (r *auditTrailReceiver) processEvents(ctx context.Context, resp *audit_trail.ListEventsResponse) plog.Logs {
+	ld := plog.NewLogs()
+
+	for _, event := range resp.Events {
+		rl := ld.ResourceLogs().AppendEmpty()
+		sl := rl.ScopeLogs().AppendEmpty()
+		lr := sl.LogRecords().AppendEmpty()
+
+		resourceAttrs := rl.Resource().Attributes()
+		resourceAttrs.PutStr(string(semconv.ServiceNameKey), event.ServiceName)
+
+		lr.SetTimestamp(pcommon.NewTimestampFromTime(*event.RecordedAt))
+		lr.SetEventName(event.MethodName)
+
+		switch event.StatusCode {
+		case http.StatusOK, http.StatusCreated, http.StatusNoContent:
+			lr.SetSeverityText("success")
+			lr.SetSeverityNumber(plog.SeverityNumberInfo)
+		default:
+			lr.SetSeverityText("failed")
+			lr.SetSeverityNumber(plog.SeverityNumberError)
+		}
+
+		body, err := json.Marshal(event)
+		if err != nil {
+			r.settings.Logger.Warn("unable to decode event")
+		} else {
+			lr.Body().SetStr(string(body))
+		}
+
+		attrs := lr.Attributes()
+		attrs.PutStr("audit_trail.event.id", event.ID)
+		attrs.PutStr("audit_trail.event.locality", event.Locality)
+		attrs.PutStr("audit_trail.event.source_ip", event.SourceIP.String())
+		attrs.PutInt("audit_trail.event.status_code", int64(event.StatusCode))
+		attrs.PutStr("audit_trail.event.request_id", event.RequestID)
+
+		if event.UserAgent != nil {
+			attrs.PutStr("audit_trail.event.user_agent", *event.UserAgent)
+		}
+	}
+
+	return ld
 }
 
 // handleEvent converts audit trail event to logs and forward it to the consumer
-func (r *auditTrailReceiver) handleEvent(ctx context.Context, event *audit_trail.Event) {
+func (r *auditTrailReceiver) consumeLogs(ctx context.Context, logs plog.Logs) {
 	ctx = r.obsrecv.StartLogsOp(ctx)
-	logs := auditTrailEventToLogs(r.settings.Logger, event)
-	consumerErr := r.consumer.ConsumeLogs(ctx, logs)
-	r.obsrecv.EndLogsOp(ctx, "audit_trail_events", 1, consumerErr)
+	err := r.consumer.ConsumeLogs(ctx, logs)
+	r.obsrecv.EndLogsOp(ctx, "audit_trail_events", logs.LogRecordCount(), err)
 }
 
 // Shutdown stops the receiver.
