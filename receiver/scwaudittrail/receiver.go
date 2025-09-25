@@ -129,7 +129,7 @@ func (r *auditTrailReceiver) fetchEvents(ctx context.Context, until time.Time) e
 
 		r.settings.Logger.Debug("Events fetched", zap.Int("count", len(response.Events)))
 
-		logs := r.processEvents(ctx, response)
+		logs := r.processEvents(response)
 		r.consumeLogs(ctx, logs)
 
 		if response.NextPageToken == nil {
@@ -142,16 +142,24 @@ func (r *auditTrailReceiver) fetchEvents(ctx context.Context, until time.Time) e
 	return nil
 }
 
-func (r *auditTrailReceiver) processEvents(ctx context.Context, resp *audit_trail.ListEventsResponse) plog.Logs {
+func (r *auditTrailReceiver) processEvents(resp *audit_trail.ListEventsResponse) plog.Logs {
 	ld := plog.NewLogs()
 
-	for _, event := range resp.Events {
-		rl := ld.ResourceLogs().AppendEmpty()
-		sl := rl.ScopeLogs().AppendEmpty()
-		lr := sl.LogRecords().AppendEmpty()
+	resourceMap := map[string]*plog.ResourceLogs{}
 
-		resourceAttrs := rl.Resource().Attributes()
-		resourceAttrs.PutStr(string(semconv.ServiceNameKey), event.ServiceName)
+	for _, event := range resp.Events {
+		resourceLogs, ok := resourceMap[event.ServiceName]
+		if !ok {
+			rl := ld.ResourceLogs().AppendEmpty()
+			resourceLogs = &rl
+			resourceAttrs := resourceLogs.Resource().Attributes()
+			resourceAttrs.PutStr(string(semconv.ServiceNameKey), event.ServiceName)
+
+			_ = resourceLogs.ScopeLogs().AppendEmpty()
+			resourceMap[event.ServiceName] = resourceLogs
+		}
+
+		lr := resourceLogs.ScopeLogs().At(0).LogRecords().AppendEmpty()
 
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(*event.RecordedAt))
 		lr.SetEventName(event.MethodName)
