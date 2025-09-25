@@ -181,7 +181,7 @@ func (r *auditTrailReceiver) processEvents(resp *audit_trail.ListEventsResponse)
 		}
 
 		attrs := lr.Attributes()
-		attrs.PutStr("audit_trail.event.id", event.ID)
+		attrs.PutStr("id", event.ID)
 		attrs.PutStr("audit_trail.event.locality", event.Locality)
 		attrs.PutStr("audit_trail.event.source_ip", event.SourceIP.String())
 		attrs.PutInt("audit_trail.event.status_code", int64(event.StatusCode))
