@@ -8,6 +8,7 @@ import (
 	"time"
 
 	audit_trail "github.com/scaleway/scaleway-sdk-go/api/audit_trail/v1alpha1"
+	"github.com/scaleway/scaleway-sdk-go/scw"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -105,43 +106,50 @@ func (r *auditTrailReceiver) poll(ctx context.Context, until time.Time) error {
 
 // fetchEvents uses scw sdk to fetch events.
 func (r *auditTrailReceiver) fetchEvents(ctx context.Context, until time.Time) error {
-	var nextPageToken *string
+	// init first token to empty string so that first loop can proceed
+	nextPageToken := scw.StringPtr("")
 
-	for {
-		r.settings.Logger.Debug(
-			"List events",
-			zap.Time("after", r.lastFetchedAt),
-			zap.Time("before", until),
-			zap.Stringp("page_token", nextPageToken),
-		)
+	for nextPageToken != nil {
+		select {
+		case _, ok := <-r.stopChan:
+			if !ok {
+				return nil
+			}
+		default:
+			r.settings.Logger.Debug(
+				"List events",
+				zap.Time("after", r.lastFetchedAt),
+				zap.Time("before", until),
+				zap.Stringp("page_token", nextPageToken),
+			)
 
-		response, err := r.client.ListEvents(&audit_trail.ListEventsRequest{
-			PageSize:       &r.config.MaxEventsPerRequest,
-			OrderBy:        audit_trail.ListEventsRequestOrderByRecordedAtAsc,
-			RecordedAfter:  &r.lastFetchedAt,
-			RecordedBefore: &until,
-			PageToken:      nextPageToken,
-		})
-		if err != nil {
-			r.settings.Logger.Error("Failed to fetch events", zap.Error(err))
-			return nil
+			response, err := r.client.ListEvents(&audit_trail.ListEventsRequest{
+				PageSize:       &r.config.MaxEventsPerRequest,
+				OrderBy:        audit_trail.ListEventsRequestOrderByRecordedAtAsc,
+				RecordedAfter:  &r.lastFetchedAt,
+				RecordedBefore: &until,
+				PageToken:      nextPageToken,
+			})
+			if err != nil {
+				return err
+			}
+
+			r.settings.Logger.Debug("Events fetched", zap.Int("count", len(response.Events)))
+
+			logs := r.processEvents(response)
+			err = r.consumeLogs(ctx, logs)
+			if err != nil {
+				return err
+			}
+
+			nextPageToken = response.NextPageToken
 		}
-
-		r.settings.Logger.Debug("Events fetched", zap.Int("count", len(response.Events)))
-
-		logs := r.processEvents(response)
-		r.consumeLogs(ctx, logs)
-
-		if response.NextPageToken == nil {
-			break
-		}
-
-		nextPageToken = response.NextPageToken
 	}
 
 	return nil
 }
 
+// processEvents transforms a list of events into a plog.Logs object.
 func (r *auditTrailReceiver) processEvents(resp *audit_trail.ListEventsResponse) plog.Logs {
 	ld := plog.NewLogs()
 
@@ -195,11 +203,12 @@ func (r *auditTrailReceiver) processEvents(resp *audit_trail.ListEventsResponse)
 	return ld
 }
 
-// handleEvent converts audit trail event to logs and forward it to the consumer
-func (r *auditTrailReceiver) consumeLogs(ctx context.Context, logs plog.Logs) {
+// consumeLogs forward logs to the consumer
+func (r *auditTrailReceiver) consumeLogs(ctx context.Context, logs plog.Logs) error {
 	ctx = r.obsrecv.StartLogsOp(ctx)
 	err := r.consumer.ConsumeLogs(ctx, logs)
 	r.obsrecv.EndLogsOp(ctx, "audit_trail_events", logs.LogRecordCount(), err)
+	return err
 }
 
 // Shutdown stops the receiver.
